@@ -109,7 +109,7 @@ color:#facc15;
 <body>
 
 <h1>ClipToShort</h1>
-<p>Upload your video and generate a vertical short</p>
+<p>Upload landscape video → get vertical short</p>
 
 <div class="ad-box">Ad Space (Top Banner)</div>
 
@@ -161,34 +161,15 @@ let uploadedFile = null;
 let timerInterval = null;
 let secondsCounter = 0;
 
-input.addEventListener("change", async function(){
+input.addEventListener("change", function(){
     uploadedFile = input.files[0];
 
-    if(!uploadedFile) return;
-
-    statusText.innerText = "Checking video format...";
-    statusText.style.color = "#facc15";
-
-    const tempVideo = document.createElement("video");
-    tempVideo.src = URL.createObjectURL(uploadedFile);
-
-    await tempVideo.play().catch(()=>{});
-    tempVideo.pause();
-
-    const width = tempVideo.videoWidth;
-    const height = tempVideo.videoHeight;
-
-    if(width > height){
-        statusText.innerText = "❌ Wide videos are not allowed. Upload vertical video.";
-        statusText.style.color = "#ef4444";
-        uploadedFile = null;
-        return;
+    if(uploadedFile){
+        statusText.innerText = "Video Ready ✅";
+        statusText.style.color = "#22c55e";
+        video.src = URL.createObjectURL(uploadedFile);
+        downloadBtn.style.display = "none";
     }
-
-    statusText.innerText = "Video Ready ✅";
-    statusText.style.color = "#22c55e";
-    video.src = URL.createObjectURL(uploadedFile);
-    downloadBtn.style.display = "none";
 });
 
 generateBtn.addEventListener("click", generatePreview);
@@ -196,7 +177,7 @@ generateBtn.addEventListener("click", generatePreview);
 async function generatePreview(){
 
     if(!uploadedFile){
-        alert("Upload a vertical video first");
+        alert("Upload a video first");
         return;
     }
 
@@ -205,7 +186,7 @@ async function generatePreview(){
     progressBar.style.width = "0%";
     downloadBtn.style.display = "none";
 
-    statusText.innerText = "Processing video...";
+    statusText.innerText = "Converting to Vertical...";
     statusText.style.color = "#facc15";
 
     secondsCounter = 0;
@@ -229,7 +210,7 @@ async function generatePreview(){
 
     ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
 
-    // ضغط ذكي حسب الطول
+    // ضغط ذكي حسب المدة
     let crfValue = 23;
     if(duration <= 15) crfValue = 20;
     if(duration >= 60) crfValue = 26;
@@ -260,7 +241,7 @@ async function generatePreview(){
     downloadBtn.href = url;
     downloadBtn.style.display = "inline-block";
 
-    statusText.innerText = "Vertical Short Generated ✅";
+    statusText.innerText = "Vertical Short Ready ✅";
     statusText.style.color = "#22c55e";
 
     generateBtn.disabled = false;
