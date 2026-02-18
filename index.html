@@ -110,7 +110,6 @@ input.addEventListener("change", function(){
 });
 
 function generatePreview(){
-
     let start = parseInt(document.getElementById("startTime").value);
     let duration = parseInt(document.getElementById("duration").value);
 
@@ -120,7 +119,6 @@ function generatePreview(){
     }
 
     video.pause();
-
     video.currentTime = start;
 
     video.onseeked = function () {
