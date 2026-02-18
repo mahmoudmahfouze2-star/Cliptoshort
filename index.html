@@ -8,16 +8,7 @@
 
 <!-- FFmpeg -->
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<script>
-  atOptions = {
-    'key' : '37d19dd31045aef2feedf2c01e1530c3',
-    'format' : 'iframe',
-    'height' : 300,
-    'width' : 160,
-    'params' : {}
-  };
-</script>
-<script src="https://www.highperformanceformat.com/37d19dd31045aef2feedf2c01e1530c3/invoke.js"></script>
+
 <style>
 
 /* ===== Reset ===== */
@@ -53,29 +44,6 @@ margin:0 auto;
 flex:1;
 max-width:850px;
 text-align:center;
-}
-
-.sidebar{
-width:300px;
-display:none;
-}
-
-@media(min-width:1024px){
-.sidebar{
-display:block;
-}
-}
-
-.ad-box{
-background:#1f1f2e;
-padding:15px;
-margin:20px auto;
-border-radius:12px;
-text-align:center;
-min-height:90px;
-display:flex;
-justify-content:center;
-align-items:center;
 }
 
 input, select{
@@ -153,20 +121,11 @@ max-width:350px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <h1>ClipToShort</h1>
-
-<div class="ad-box">
-    <!-- Top Banner Place -->
-</div>
-
-<div class="main-wrapper">
-
-<div class="container">
 
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
@@ -182,20 +141,6 @@ max-width:350px;
 
 <div class="video-grid" id="videoGrid"></div>
 
-<div class="ad-box">
-    <!-- Bottom Banner Place -->
-</div>
-
-</div>
-
-<div class="sidebar">
-<div class="ad-box">
-    <!-- Sidebar Banner -->
-</div>
-</div>
-
-</div>
-
 <script>
 
 const ffmpeg = FFmpeg.createFFmpeg({ log: false });
@@ -207,7 +152,6 @@ let generateBtn = document.getElementById("generateBtn");
 let videoGrid = document.getElementById("videoGrid");
 
 let uploadedFile = null;
-let popTriggered = false;
 
 input.addEventListener("change", function(){
 uploadedFile = input.files[0];
@@ -217,19 +161,7 @@ statusText.style.color = "#22c55e";
 }
 });
 
-generateBtn.addEventListener("click", async function(){
-
-// 🔥 تشغيل الإعلان أول مرة فقط
-if(!popTriggered){
-let s = document.createElement("script");
-s.src = "https://pl28740452.effectivegatecpm.com/fe/db/f8/fedbf860db1331095f6a009604f1919d.js";
-document.body.appendChild(s);
-popTriggered = true;
-}
-
-await generateHighlights();
-
-});
+generateBtn.addEventListener("click", generateHighlights);
 
 async function generateHighlights(){
 
@@ -299,6 +231,9 @@ statusText.style.color = "#22c55e";
 }
 
 </script>
+
+<!-- 🔥 Adsterra Social Bar (يوضع هنا قبل إغلاق body) -->
+<script src="https://pl28740604.effectivegatecpm.com/f4/e7/76/f4e7760f6cd0efb0d0ac579adc77b1d9.js"></script>
 
 </body>
 </html>
