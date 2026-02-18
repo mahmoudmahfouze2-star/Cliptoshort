@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClipToShort - Upload Short Generator</title>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
 <style>
 body{
@@ -128,7 +128,7 @@ color:#facc15;
 <option value="60">60 Seconds</option>
 </select>
 
-<button id="generateBtn" type="button" onclick="generatePreview()">Generate Short</button>
+<button id="generateBtn" type="button">Generate Short</button>
 
 <div class="progress-container" id="progressContainer">
   <div class="progress-bar-bg">
@@ -145,8 +145,8 @@ color:#facc15;
 </div>
 
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: false });
+const ffmpeg = FFmpeg.createFFmpeg({ log: false });
+const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
 let statusText = document.getElementById("uploadStatus");
@@ -158,8 +158,8 @@ let timerText = document.getElementById("timer");
 let generateBtn = document.getElementById("generateBtn");
 
 let uploadedFile = null;
-let startTimeCounter = 0;
 let timerInterval = null;
+let secondsCounter = 0;
 
 input.addEventListener("change", function(){
     uploadedFile = input.files[0];
@@ -172,6 +172,8 @@ input.addEventListener("change", function(){
     }
 });
 
+generateBtn.addEventListener("click", generatePreview);
+
 async function generatePreview(){
 
     if(!uploadedFile){
@@ -180,23 +182,23 @@ async function generatePreview(){
     }
 
     generateBtn.disabled = true;
-    downloadBtn.style.display = "none";
     progressContainer.style.display = "block";
     progressBar.style.width = "0%";
-    startTimeCounter = 0;
-    timerText.innerText = "0s";
+    downloadBtn.style.display = "none";
 
     statusText.innerText = "Processing video...";
     statusText.style.color = "#facc15";
 
-    // Timer counter
+    secondsCounter = 0;
+    timerText.innerText = "0s";
+
     timerInterval = setInterval(() => {
-        startTimeCounter++;
-        timerText.innerText = startTimeCounter + "s";
+        secondsCounter++;
+        timerText.innerText = secondsCounter + "s";
     }, 1000);
 
-    let start = document.getElementById("startTime").value;
-    let duration = document.getElementById("duration").value;
+    const start = document.getElementById("startTime").value;
+    const duration = document.getElementById("duration").value;
 
     if(!ffmpeg.isLoaded()){
         await ffmpeg.load();
