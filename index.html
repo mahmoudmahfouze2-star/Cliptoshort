@@ -68,6 +68,14 @@ border:1px dashed #7c3aed;
 font-weight:bold;
 margin-top:10px;
 }
+
+#downloadBtn{
+display:none;
+margin-top:15px;
+color:#22c55e;
+font-weight:bold;
+text-decoration:none;
+}
 </style>
 </head>
 
@@ -79,6 +87,7 @@ margin-top:10px;
 <div class="ad-box">Ad Space (Top Banner)</div>
 
 <div class="container">
+
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
@@ -98,17 +107,20 @@ margin-top:10px;
 
 <video id="videoPlayer" controls></video>
 
+<a id="downloadBtn" download="short.mp4">Download Short</a>
+
 </div>
 
 <script>
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ log: false });
 
 let input = document.getElementById("videoInput");
 let statusText = document.getElementById("uploadStatus");
 let video = document.getElementById("videoPlayer");
+let downloadBtn = document.getElementById("downloadBtn");
 
-let uploadedFile;
+let uploadedFile = null;
 
 input.addEventListener("change", function(){
     uploadedFile = input.files[0];
@@ -116,8 +128,8 @@ input.addEventListener("change", function(){
     if(uploadedFile){
         statusText.innerText = "Video Ready ✅";
         statusText.style.color = "#22c55e";
-
         video.src = URL.createObjectURL(uploadedFile);
+        downloadBtn.style.display = "none";
     }
 });
 
@@ -133,6 +145,7 @@ async function generatePreview(){
 
     statusText.innerText = "Processing video...";
     statusText.style.color = "#facc15";
+    downloadBtn.style.display = "none";
 
     if(!ffmpeg.isLoaded()){
         await ffmpeg.load();
@@ -149,9 +162,14 @@ async function generatePreview(){
     );
 
     const data = ffmpeg.FS("readFile", "output.mp4");
-    const url = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
+    const url = URL.createObjectURL(
+        new Blob([data.buffer], { type: "video/mp4" })
+    );
 
     video.src = url;
+
+    downloadBtn.href = url;
+    downloadBtn.style.display = "inline-block";
 
     statusText.innerText = "Short Generated ✅";
     statusText.style.color = "#22c55e";
@@ -160,6 +178,3 @@ async function generatePreview(){
 
 </body>
 </html>
-
-
-
