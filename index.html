@@ -98,6 +98,9 @@ border:1px dashed #7c3aed;
 let video = document.getElementById("videoPlayer");
 let input = document.getElementById("videoInput");
 
+video.preload = "auto";
+
+
 input.addEventListener("change", function(){
     let file = input.files[0];
     if(file){
@@ -107,6 +110,7 @@ input.addEventListener("change", function(){
 });
 
 function generatePreview(){
+
     let start = parseInt(document.getElementById("startTime").value);
     let duration = parseInt(document.getElementById("duration").value);
 
@@ -115,15 +119,19 @@ function generatePreview(){
         return;
     }
 
+    video.pause();
+
     video.currentTime = start;
-    video.play();
 
-    setTimeout(function(){
-        video.pause();
-    }, duration * 1000);
+    video.onseeked = function () {
+        video.play();
 
-   
+        setTimeout(function(){
+            video.pause();
+        }, duration * 1000);
+    };
 }
+
 </script>
 <section style="max-width:800px;margin:40px auto;text-align:left;">
 <h2>About ClipToShort</h2>
