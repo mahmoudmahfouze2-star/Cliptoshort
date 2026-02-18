@@ -6,9 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClipToShort - Upload Short Generator</title>
 
-<!-- 🔥 Adsterra Popunder -->
-<script src="https://pl28740452.effectivegatecpm.com/fe/db/f8/fedbf860db1331095f6a009604f1919d.js"></script>
-
 <!-- FFmpeg -->
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
@@ -147,15 +144,15 @@ max-width:350px;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <h1>ClipToShort</h1>
 
-<!-- ===== Top Banner (Propeller هنا) ===== -->
 <div class="ad-box">
-    <!-- PUT_PROP_BANNER_TOP_HERE -->
+    <!-- Top Banner Place -->
 </div>
 
 <div class="main-wrapper">
@@ -176,23 +173,22 @@ max-width:350px;
 
 <div class="video-grid" id="videoGrid"></div>
 
-<!-- ===== Bottom Banner ===== -->
 <div class="ad-box">
-    <!-- PUT_PROP_BANNER_BOTTOM_HERE -->
+    <!-- Bottom Banner Place -->
 </div>
 
 </div>
 
-<!-- ===== Sidebar Desktop Only ===== -->
 <div class="sidebar">
 <div class="ad-box">
-    <!-- PUT_PROP_SIDEBAR_HERE -->
+    <!-- Sidebar Banner -->
 </div>
 </div>
 
 </div>
 
 <script>
+
 const ffmpeg = FFmpeg.createFFmpeg({ log: false });
 const fetchFile = FFmpeg.fetchFile;
 
@@ -202,16 +198,29 @@ let generateBtn = document.getElementById("generateBtn");
 let videoGrid = document.getElementById("videoGrid");
 
 let uploadedFile = null;
+let popTriggered = false;
 
 input.addEventListener("change", function(){
-    uploadedFile = input.files[0];
-    if(uploadedFile){
-        statusText.innerText = "Video Ready ✅";
-        statusText.style.color = "#22c55e";
-    }
+uploadedFile = input.files[0];
+if(uploadedFile){
+statusText.innerText = "Video Ready ✅";
+statusText.style.color = "#22c55e";
+}
 });
 
-generateBtn.addEventListener("click", generateHighlights);
+generateBtn.addEventListener("click", async function(){
+
+// 🔥 تشغيل الإعلان أول مرة فقط
+if(!popTriggered){
+let s = document.createElement("script");
+s.src = "https://pl28740452.effectivegatecpm.com/fe/db/f8/fedbf860db1331095f6a009604f1919d.js";
+document.body.appendChild(s);
+popTriggered = true;
+}
+
+await generateHighlights();
+
+});
 
 async function generateHighlights(){
 
@@ -236,7 +245,6 @@ await ffmpeg.load();
 }
 
 ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
-
 videoGrid.innerHTML = "";
 
 let startPoints = [
@@ -280,6 +288,7 @@ statusText.innerText = "3 Highlights Ready ✅";
 statusText.style.color = "#22c55e";
 
 }
+
 </script>
 
 </body>
