@@ -108,8 +108,8 @@ color:#facc15;
 
 <body>
 
-<h1>Smart Vertical Short Generator</h1>
-<p>Auto detect strong scenes + smart framing</p>
+<h1>Smart Highlight Short Generator</h1>
+<p>Auto detect strong scene → continuous vertical short</p>
 
 <div class="ad-box">Ad Space (Top Banner)</div>
 
@@ -142,7 +142,7 @@ color:#facc15;
 </div>
 
 <script>
-const ffmpeg = FFmpeg.createFFmpeg({ log: false });
+const ffmpeg = FFmpeg.createFFmpeg({ log: true });
 const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
@@ -182,7 +182,7 @@ async function generatePreview(){
     progressBar.style.width = "0%";
     downloadBtn.style.display = "none";
 
-    statusText.innerText = "Detecting strong scenes + smart framing...";
+    statusText.innerText = "Analyzing video...";
     statusText.style.color = "#facc15";
 
     secondsCounter = 0;
@@ -205,13 +205,14 @@ async function generatePreview(){
 
     ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
 
+    // 👇 نبدأ من بعد أول 5 ثواني لتجنب المقدمة
+    const startPoint = 5;
+
     await ffmpeg.run(
-        "-i", "input.mp4",
-        "-vf",
-        "select='gt(scene,0.3)'," +
-        "scale=720:1280:force_original_aspect_ratio=increase," +
-        "crop=720:1280:(in_w-720)/2:(in_h-1280)/2",
+        "-ss", startPoint.toString(),
         "-t", duration,
+        "-i", "input.mp4",
+        "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
         "-c:v", "libx264",
         "-preset", "fast",
         "-crf", "22",
@@ -233,7 +234,7 @@ async function generatePreview(){
     downloadBtn.href = url;
     downloadBtn.style.display = "inline-block";
 
-    statusText.innerText = "Smart Vertical Short Ready ✅";
+    statusText.innerText = "Smart Continuous Short Ready ✅";
     statusText.style.color = "#22c55e";
 
     generateBtn.disabled = false;
