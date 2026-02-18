@@ -62,6 +62,11 @@ padding:25px;
 margin:25px auto;
 border:1px dashed #7c3aed;
 }
+
+.status{
+font-weight:bold;
+margin-top:10px;
+}
 </style>
 </head>
 
@@ -73,8 +78,8 @@ border:1px dashed #7c3aed;
 <div class="ad-box">Ad Space (Top Banner)</div>
 
 <div class="container">
-
 <input type="file" id="videoInput" accept="video/*">
+<p id="uploadStatus" class="status"></p>
 
 <label>Start Time (seconds)</label><br>
 <input type="number" id="startTime" value="0">
@@ -86,7 +91,7 @@ border:1px dashed #7c3aed;
 <option value="60">60 Seconds</option>
 </select>
 
-<button onclick="generatePreview()">Generate Short</button>
+<button type="button" onclick="generatePreview()">Generate Short</button>
 
 <div class="ad-box">Ad Space (Before Processing)</div>
 
@@ -97,19 +102,30 @@ border:1px dashed #7c3aed;
 <script>
 let video = document.getElementById("videoPlayer");
 let input = document.getElementById("videoInput");
+let statusText = document.getElementById("uploadStatus");
 
 video.preload = "auto";
 
-
 input.addEventListener("change", function(){
     let file = input.files[0];
+
     if(file){
+        statusText.innerText = "Uploading video...";
+        statusText.style.color = "#facc15";
+
         let url = URL.createObjectURL(file);
         video.src = url;
+        video.load();
+
+        video.onloadedmetadata = function(){
+            statusText.innerText = "Video Ready ✅";
+            statusText.style.color = "#22c55e";
+        };
     }
 });
 
 function generatePreview(){
+
     let start = parseInt(document.getElementById("startTime").value);
     let duration = parseInt(document.getElementById("duration").value);
 
@@ -129,19 +145,10 @@ function generatePreview(){
         }, duration * 1000);
     };
 }
-
 </script>
-<section style="max-width:800px;margin:40px auto;text-align:left;">
-<h2>About ClipToShort</h2>
-<p>ClipToShort is a free online video clipping tool that allows users to create short preview clips from longer video files. This tool is designed for content creators who want to convert long-form videos into short-form content quickly and easily.</p>
 
-<p>Users can upload a video, choose a start time, and select the duration of the clip. The tool processes the request instantly and generates a short preview ready for sharing.</p>
-
-<p>We prioritize user privacy and do not permanently store uploaded content.</p>
-</section>
-   <footer style="margin-top:40px;">
-<a href="about.html">About</a> |
-<a href="privacy.html">Privacy Policy</a>
-   </footer>
 </body>
 </html>
+
+
+
