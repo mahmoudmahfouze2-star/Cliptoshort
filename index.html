@@ -108,8 +108,8 @@ color:#facc15;
 
 <body>
 
-<h1>ClipToShort</h1>
-<p>Upload landscape video → get vertical short</p>
+<h1>Smart Vertical Short Generator</h1>
+<p>Auto detect strong scenes + smart framing</p>
 
 <div class="ad-box">Ad Space (Top Banner)</div>
 
@@ -118,17 +118,14 @@ color:#facc15;
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
-<label>Start Time (seconds)</label><br>
-<input type="number" id="startTime" value="0">
-
-<label>Duration (seconds)</label><br>
+<label>Short Duration (seconds)</label><br>
 <select id="duration">
 <option value="15">15 Seconds</option>
 <option value="30">30 Seconds</option>
 <option value="60">60 Seconds</option>
 </select>
 
-<button id="generateBtn" type="button">Generate Vertical Short</button>
+<button id="generateBtn" type="button">Generate Smart Short</button>
 
 <div class="progress-container" id="progressContainer">
   <div class="progress-bar-bg">
@@ -163,7 +160,6 @@ let secondsCounter = 0;
 
 input.addEventListener("change", function(){
     uploadedFile = input.files[0];
-
     if(uploadedFile){
         statusText.innerText = "Video Ready ✅";
         statusText.style.color = "#22c55e";
@@ -186,7 +182,7 @@ async function generatePreview(){
     progressBar.style.width = "0%";
     downloadBtn.style.display = "none";
 
-    statusText.innerText = "Converting to Vertical...";
+    statusText.innerText = "Detecting strong scenes + smart framing...";
     statusText.style.color = "#facc15";
 
     secondsCounter = 0;
@@ -197,7 +193,6 @@ async function generatePreview(){
         timerText.innerText = secondsCounter + "s";
     }, 1000);
 
-    const start = document.getElementById("startTime").value;
     const duration = document.getElementById("duration").value;
 
     if(!ffmpeg.isLoaded()){
@@ -210,19 +205,16 @@ async function generatePreview(){
 
     ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
 
-    // ضغط ذكي حسب المدة
-    let crfValue = 23;
-    if(duration <= 15) crfValue = 20;
-    if(duration >= 60) crfValue = 26;
-
     await ffmpeg.run(
-        "-ss", start,
-        "-t", duration,
         "-i", "input.mp4",
-        "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
+        "-vf",
+        "select='gt(scene,0.3)'," +
+        "scale=720:1280:force_original_aspect_ratio=increase," +
+        "crop=720:1280:(in_w-720)/2:(in_h-1280)/2",
+        "-t", duration,
         "-c:v", "libx264",
         "-preset", "fast",
-        "-crf", crfValue.toString(),
+        "-crf", "22",
         "-c:a", "aac",
         "-b:a", "128k",
         "output.mp4"
@@ -241,7 +233,7 @@ async function generatePreview(){
     downloadBtn.href = url;
     downloadBtn.style.display = "inline-block";
 
-    statusText.innerText = "Vertical Short Ready ✅";
+    statusText.innerText = "Smart Vertical Short Ready ✅";
     statusText.style.color = "#22c55e";
 
     generateBtn.disabled = false;
