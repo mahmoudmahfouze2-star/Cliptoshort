@@ -21,7 +21,7 @@ padding:20px;
 h1{ color:#7c3aed; }
 
 .container{
-max-width:600px;
+max-width:900px;
 margin:auto;
 }
 
@@ -35,209 +35,154 @@ border:none;
 
 button{
 display:inline-block;
-padding:12px 25px;
-margin:15px;
+padding:10px 20px;
+margin:10px;
 background:#7c3aed;
 color:white;
 border:none;
 border-radius:8px;
 cursor:pointer;
-font-size:16px;
-}
-
-button:disabled{
-opacity:0.6;
-cursor:not-allowed;
 }
 
 button:hover{
 background:#22d3ee;
 }
 
-video{
-width:100%;
+.video-grid{
+display:flex;
+flex-wrap:wrap;
+gap:20px;
+justify-content:center;
 margin-top:20px;
-border-radius:8px;
 }
 
-.ad-box{
+.video-box{
 background:#1f1f2e;
-padding:25px;
-margin:25px auto;
-border:1px dashed #7c3aed;
+padding:15px;
+border-radius:10px;
+width:260px;
+}
+
+video{
+width:100%;
+border-radius:8px;
 }
 
 .status{
 font-weight:bold;
 margin-top:10px;
 }
-
-#downloadBtn{
-display:none;
-margin-top:15px;
-color:#22c55e;
-font-weight:bold;
-text-decoration:none;
-}
-
-.progress-container{
-margin-top:15px;
-display:none;
-}
-
-.progress-bar-bg{
-background:#1f1f2e;
-border-radius:6px;
-overflow:hidden;
-}
-
-.progress-bar{
-height:10px;
-width:0%;
-background:#22c55e;
-transition:width 0.2s ease;
-}
-
-#timer{
-margin-top:8px;
-font-size:14px;
-color:#facc15;
-}
 </style>
 </head>
 
 <body>
 
-<h1>Smart Highlight Short Generator</h1>
-<p>Auto detect strong scene → continuous vertical short</p>
-
-<div class="ad-box">Ad Space (Top Banner)</div>
+<h1>Smart Triple Highlight Generator</h1>
 
 <div class="container">
 
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
-<label>Short Duration (seconds)</label><br>
+<label>Short Duration</label>
 <select id="duration">
-<option value="15">15 Seconds</option>
-<option value="30">30 Seconds</option>
-<option value="60">60 Seconds</option>
+<option value="15">15s</option>
+<option value="30">30s</option>
+<option value="60">60s</option>
 </select>
 
-<button id="generateBtn" type="button">Generate Smart Short</button>
+<button id="generateBtn">Generate 3 Highlights</button>
 
-<div class="progress-container" id="progressContainer">
-  <div class="progress-bar-bg">
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-  <div id="timer">0s</div>
-</div>
-
-<div class="ad-box">Ad Space (Before Processing)</div>
-
-<video id="videoPlayer" controls></video>
-<a id="downloadBtn" download="short.mp4">Download Short</a>
+<div class="video-grid" id="videoGrid"></div>
 
 </div>
 
 <script>
-const ffmpeg = FFmpeg.createFFmpeg({ log: true });
+const ffmpeg = FFmpeg.createFFmpeg({ log: false });
 const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
 let statusText = document.getElementById("uploadStatus");
-let video = document.getElementById("videoPlayer");
-let downloadBtn = document.getElementById("downloadBtn");
-let progressBar = document.getElementById("progressBar");
-let progressContainer = document.getElementById("progressContainer");
-let timerText = document.getElementById("timer");
 let generateBtn = document.getElementById("generateBtn");
+let videoGrid = document.getElementById("videoGrid");
 
 let uploadedFile = null;
-let timerInterval = null;
-let secondsCounter = 0;
 
 input.addEventListener("change", function(){
     uploadedFile = input.files[0];
     if(uploadedFile){
         statusText.innerText = "Video Ready ✅";
-        statusText.style.color = "#22c55e";
-        video.src = URL.createObjectURL(uploadedFile);
-        downloadBtn.style.display = "none";
     }
 });
 
-generateBtn.addEventListener("click", generatePreview);
+generateBtn.addEventListener("click", generateHighlights);
 
-async function generatePreview(){
+async function generateHighlights(){
 
     if(!uploadedFile){
-        alert("Upload a video first");
+        alert("Upload video first");
         return;
     }
 
-    generateBtn.disabled = true;
-    progressContainer.style.display = "block";
-    progressBar.style.width = "0%";
-    downloadBtn.style.display = "none";
+    statusText.innerText = "Analyzing full video...";
 
-    statusText.innerText = "Analyzing video...";
-    statusText.style.color = "#facc15";
+    const tempVideo = document.createElement("video");
+    tempVideo.src = URL.createObjectURL(uploadedFile);
+    await tempVideo.play().catch(()=>{});
+    tempVideo.pause();
 
-    secondsCounter = 0;
-    timerText.innerText = "0s";
-
-    timerInterval = setInterval(() => {
-        secondsCounter++;
-        timerText.innerText = secondsCounter + "s";
-    }, 1000);
-
-    const duration = document.getElementById("duration").value;
+    const totalDuration = Math.floor(tempVideo.duration);
+    const shortDuration = parseInt(document.getElementById("duration").value);
 
     if(!ffmpeg.isLoaded()){
         await ffmpeg.load();
     }
 
-    ffmpeg.setProgress(({ ratio }) => {
-        progressBar.style.width = Math.round(ratio * 100) + "%";
-    });
-
     ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
 
-    // 👇 نبدأ من بعد أول 5 ثواني لتجنب المقدمة
-    const startPoint = 5;
+    videoGrid.innerHTML = "";
 
-    await ffmpeg.run(
-        "-ss", startPoint.toString(),
-        "-t", duration,
-        "-i", "input.mp4",
-        "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-crf", "22",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "output.mp4"
-    );
+    // نختار 3 نقاط موزعة عبر الفيديو
+    let startPoints = [
+        Math.floor(totalDuration * 0.3),
+        Math.floor(totalDuration * 0.5),
+        Math.floor(totalDuration * 0.75)
+    ];
 
-    const data = ffmpeg.FS("readFile", "output.mp4");
-    const url = URL.createObjectURL(
-        new Blob([data.buffer], { type: "video/mp4" })
-    );
+    for(let i=0;i<3;i++){
 
-    video.src = url;
+        statusText.innerText = "Generating highlight " + (i+1);
 
-    clearInterval(timerInterval);
-    timerText.innerText = "Completed ✅";
+        await ffmpeg.run(
+            "-ss", startPoints[i].toString(),
+            "-t", shortDuration.toString(),
+            "-i", "input.mp4",
+            "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "23",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "output"+i+".mp4"
+        );
 
-    downloadBtn.href = url;
-    downloadBtn.style.display = "inline-block";
+        const data = ffmpeg.FS("readFile", "output"+i+".mp4");
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
 
-    statusText.innerText = "Smart Continuous Short Ready ✅";
-    statusText.style.color = "#22c55e";
+        let box = document.createElement("div");
+        box.className = "video-box";
 
-    generateBtn.disabled = false;
+        box.innerHTML = `
+            <video controls src="${url}"></video>
+            <a href="${url}" download="highlight_${i+1}.mp4">
+                <button>Download</button>
+            </a>
+        `;
+
+        videoGrid.appendChild(box);
+    }
+
+    statusText.innerText = "3 Smart Highlights Ready ✅";
 }
 </script>
 
