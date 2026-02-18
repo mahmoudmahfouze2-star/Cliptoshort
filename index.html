@@ -109,7 +109,7 @@ color:#facc15;
 <body>
 
 <h1>ClipToShort</h1>
-<p>Upload your video and generate a short preview</p>
+<p>Upload your video and generate a vertical short</p>
 
 <div class="ad-box">Ad Space (Top Banner)</div>
 
@@ -128,7 +128,7 @@ color:#facc15;
 <option value="60">60 Seconds</option>
 </select>
 
-<button id="generateBtn" type="button">Generate Short</button>
+<button id="generateBtn" type="button">Generate Vertical Short</button>
 
 <div class="progress-container" id="progressContainer">
   <div class="progress-bar-bg">
@@ -161,15 +161,34 @@ let uploadedFile = null;
 let timerInterval = null;
 let secondsCounter = 0;
 
-input.addEventListener("change", function(){
+input.addEventListener("change", async function(){
     uploadedFile = input.files[0];
 
-    if(uploadedFile){
-        statusText.innerText = "Video Ready ✅";
-        statusText.style.color = "#22c55e";
-        video.src = URL.createObjectURL(uploadedFile);
-        downloadBtn.style.display = "none";
+    if(!uploadedFile) return;
+
+    statusText.innerText = "Checking video format...";
+    statusText.style.color = "#facc15";
+
+    const tempVideo = document.createElement("video");
+    tempVideo.src = URL.createObjectURL(uploadedFile);
+
+    await tempVideo.play().catch(()=>{});
+    tempVideo.pause();
+
+    const width = tempVideo.videoWidth;
+    const height = tempVideo.videoHeight;
+
+    if(width > height){
+        statusText.innerText = "❌ Wide videos are not allowed. Upload vertical video.";
+        statusText.style.color = "#ef4444";
+        uploadedFile = null;
+        return;
     }
+
+    statusText.innerText = "Video Ready ✅";
+    statusText.style.color = "#22c55e";
+    video.src = URL.createObjectURL(uploadedFile);
+    downloadBtn.style.display = "none";
 });
 
 generateBtn.addEventListener("click", generatePreview);
@@ -177,7 +196,7 @@ generateBtn.addEventListener("click", generatePreview);
 async function generatePreview(){
 
     if(!uploadedFile){
-        alert("Upload a video first");
+        alert("Upload a vertical video first");
         return;
     }
 
@@ -205,17 +224,26 @@ async function generatePreview(){
     }
 
     ffmpeg.setProgress(({ ratio }) => {
-        let percent = Math.round(ratio * 100);
-        progressBar.style.width = percent + "%";
+        progressBar.style.width = Math.round(ratio * 100) + "%";
     });
 
     ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
+
+    // ضغط ذكي حسب الطول
+    let crfValue = 23;
+    if(duration <= 15) crfValue = 20;
+    if(duration >= 60) crfValue = 26;
 
     await ffmpeg.run(
         "-ss", start,
         "-t", duration,
         "-i", "input.mp4",
-        "-c", "copy",
+        "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", crfValue.toString(),
+        "-c:a", "aac",
+        "-b:a", "128k",
         "output.mp4"
     );
 
@@ -232,7 +260,7 @@ async function generatePreview(){
     downloadBtn.href = url;
     downloadBtn.style.display = "inline-block";
 
-    statusText.innerText = "Short Generated ✅";
+    statusText.innerText = "Vertical Short Generated ✅";
     statusText.style.color = "#22c55e";
 
     generateBtn.disabled = false;
