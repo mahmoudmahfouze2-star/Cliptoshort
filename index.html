@@ -1,52 +1,128 @@
-<p dir="ltr">&lt;!DOCTYPE html&gt;<br>
-&lt;html&gt;<br>
-&lt;head&gt;<br>
-&lt;meta charset="UTF-8"&gt;<br>
-&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;<br>
-&lt;title&gt;ClipToShort - Upload Generator&lt;/title&gt;</p>
-<p dir="ltr">&lt;style&gt;<br>
-body{<br>
-background:#0f0f14;<br>
-color:white;<br>
-font-family:Arial;<br>
-text-align:center;<br>
-margin:0;<br>
-padding:20px;<br>
-}</p>
-<p dir="ltr">h1{<br>
-color:#7c3aed;<br>
-}</p>
-<p dir="ltr">.container{<br>
-max-width:600px;<br>
-margin:auto;<br>
-}</p>
-<p dir="ltr">input, select{<br>
-padding:10px;<br>
-margin:10px;<br>
-width:90%;<br>
-border-radius:6px;<br>
-border:none;<br>
-}</p>
-<p dir="ltr">.btn{<br>
-display:inline-block;<br>
-padding:12px 25px;<br>
-margin:15px;<br>
-background:#7c3aed;<br>
-color:white;<br>
-border:none;<br>
-border-radius:8px;<br>
-cursor:pointer;<br>
-font-size:16px;<br>
-}</p>
-<p dir="ltr">.btn:hover{<br>
-background:#22d3ee;<br>
-}</p>
-<p dir="ltr">video{<br>
-width:100%;<br>
-margin-top:20px;<br>
-border-radius:8px;<br>
-}</p>
-<p dir="ltr">.ad-box{<br>
-background:#1f1f2e;<br>
-padding:25px;<br>
-margin:25px</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClipToShort - Upload Short Generator</title>
+
+<style>
+body{
+background:#0f0f14;
+color:white;
+font-family:Arial, sans-serif;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+h1{
+color:#7c3aed;
+}
+
+.container{
+max-width:600px;
+margin:auto;
+}
+
+input, select{
+padding:10px;
+margin:10px;
+width:90%;
+border-radius:6px;
+border:none;
+}
+
+button{
+display:inline-block;
+padding:12px 25px;
+margin:15px;
+background:#7c3aed;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-size:16px;
+}
+
+button:hover{
+background:#22d3ee;
+}
+
+video{
+width:100%;
+margin-top:20px;
+border-radius:8px;
+}
+
+.ad-box{
+background:#1f1f2e;
+padding:25px;
+margin:25px auto;
+border:1px dashed #7c3aed;
+}
+</style>
+</head>
+
+<body>
+
+<h1>ClipToShort</h1>
+<p>Upload your video and generate a short preview</p>
+
+<div class="ad-box">Ad Space (Top Banner)</div>
+
+<div class="container">
+
+<input type="file" id="videoInput" accept="video/*">
+
+<label>Start Time (seconds)</label><br>
+<input type="number" id="startTime" value="0">
+
+<label>Duration (seconds)</label><br>
+<select id="duration">
+<option value="15">15 Seconds</option>
+<option value="30">30 Seconds</option>
+<option value="60">60 Seconds</option>
+</select>
+
+<button onclick="generatePreview()">Generate Short</button>
+
+<div class="ad-box">Ad Space (Before Processing)</div>
+
+<video id="videoPlayer" controls></video>
+
+</div>
+
+<script>
+let video = document.getElementById("videoPlayer");
+let input = document.getElementById("videoInput");
+
+input.addEventListener("change", function(){
+    let file = input.files[0];
+    if(file){
+        let url = URL.createObjectURL(file);
+        video.src = url;
+    }
+});
+
+function generatePreview(){
+    let start = parseInt(document.getElementById("startTime").value);
+    let duration = parseInt(document.getElementById("duration").value);
+
+    if(!video.src){
+        alert("Please upload a video first.");
+        return;
+    }
+
+    video.currentTime = start;
+    video.play();
+
+    setTimeout(function(){
+        video.pause();
+    }, duration * 1000);
+
+    alert("Ad Placeholder (Interstitial)");
+}
+</script>
+
+</body>
+</html>
