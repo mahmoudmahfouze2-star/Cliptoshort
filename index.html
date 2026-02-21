@@ -4,10 +4,9 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClipToShort - AI Reel Generator</title>
+<title>ClipToShort - 3 Reels Generator</title>
 
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@800&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -15,7 +14,7 @@
 body{
 background:#0f0f14;
 color:white;
-font-family:'Cairo', sans-serif;
+font-family:Arial, sans-serif;
 padding:20px;
 text-align:center;
 }
@@ -49,20 +48,39 @@ font-size:16px;
 
 button:hover{background:#22d3ee;}
 
-.video-box{
+.video-grid{
+display:flex;
+flex-wrap:wrap;
+gap:20px;
+justify-content:center;
 margin-top:25px;
-position:relative;
-max-width:400px;
-margin-inline:auto;
+}
+
+.video-box{
+background:#1f1f2e;
+padding:15px;
+border-radius:12px;
+width:260px;
 }
 
 video{
 width:100%;
-border-radius:15px;
+border-radius:10px;
 }
 
 .status{
 margin-top:15px;
+font-weight:bold;
+}
+
+.download-btn{
+display:inline-block;
+margin-top:12px;
+padding:10px 18px;
+background:#22c55e;
+color:white;
+border-radius:8px;
+text-decoration:none;
 font-weight:bold;
 }
 
@@ -71,17 +89,14 @@ font-weight:bold;
 
 <body>
 
-<h1>ClipToShort AI</h1>
+<h1>ClipToShort</h1>
 
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
-<!-- الزر المضاف -->
-<button id="generateBtn">Generate Reel + Auto Caption</button>
+<button id="generateBtn">Generate 3 Reels (9:16) + Captions</button>
 
-<div class="video-box">
-<video id="preview" controls></video>
-</div>
+<div class="video-grid" id="videoGrid"></div>
 
 <script>
 
@@ -89,102 +104,104 @@ const ffmpeg = FFmpeg.createFFmpeg({ log:true });
 const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
-let preview = document.getElementById("preview");
 let statusText = document.getElementById("uploadStatus");
 let generateBtn = document.getElementById("generateBtn");
+let videoGrid = document.getElementById("videoGrid");
 
-let uploadedFile;
+let uploadedFile = null;
 
 input.addEventListener("change", function(){
 uploadedFile = input.files[0];
 if(uploadedFile){
-preview.src = URL.createObjectURL(uploadedFile);
 statusText.innerText = "Video Ready ✅";
 statusText.style.color = "#22c55e";
 }
 });
 
-generateBtn.addEventListener("click", generateReel);
+generateBtn.addEventListener("click", generateReels);
 
-async function generateReel(){
+async function generateReels(){
 
-if(!uploadedFile) return alert("Upload video first");
+if(!uploadedFile){
+alert("Upload video first");
+return;
+}
 
 statusText.innerText="Loading FFmpeg...";
 statusText.style.color="#facc15";
 
-if(!ffmpeg.isLoaded()) await ffmpeg.load();
+if(!ffmpeg.isLoaded()){
+await ffmpeg.load();
+}
 
-ffmpeg.FS("writeFile","input.mp4", await fetchFile(uploadedFile));
+ffmpeg.FS("writeFile","input.mp4",await fetchFile(uploadedFile));
 
-statusText.innerText="Creating 30s Reel (9:16)...";
+videoGrid.innerHTML="";
+
+const tempVideo = document.createElement("video");
+tempVideo.src = URL.createObjectURL(uploadedFile);
+await tempVideo.play().catch(()=>{});
+tempVideo.pause();
+
+let totalDuration = Math.floor(tempVideo.duration);
+
+let startPoints = [
+Math.floor(totalDuration * 0.25),
+Math.floor(totalDuration * 0.5),
+Math.floor(totalDuration * 0.75)
+];
+
+let captions = [
+"أقوى لحظة في الفيديو 🔥",
+"المشهد ده غير كل حاجة 😱",
+"الجزء اللي لازم تشوفه 👀"
+];
+
+for(let i=0;i<3;i++){
+
+statusText.innerText="Creating Reel " + (i+1);
 
 await ffmpeg.run(
-"-ss","5",
+"-ss", startPoints[i].toString(),
 "-t","30",
 "-i","input.mp4",
 "-vf","scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
 "-preset","ultrafast",
-"reel.mp4"
+"reel"+i+".mp4"
 );
-
-const reelData = ffmpeg.FS("readFile","reel.mp4");
-const reelURL = URL.createObjectURL(new Blob([reelData.buffer],{type:"video/mp4"}));
-
-preview.src = reelURL;
-
-statusText.innerText="Generating Auto Caption (Chrome Only)...";
-statusText.style.color="#facc15";
-
-startSpeechRecognition();
-
-}
-
-function startSpeechRecognition(){
-
-if (!('webkitSpeechRecognition' in window)) {
-alert("Use Google Chrome Browser");
-return;
-}
-
-let recognition = new webkitSpeechRecognition();
-recognition.lang="ar-EG";
-recognition.continuous=false;
-
-recognition.onresult=function(event){
-
-let text=event.results[0][0].transcript;
-burnCaptions(text);
-};
-
-recognition.start();
-preview.play();
-}
-
-async function burnCaptions(text){
-
-statusText.innerText="Burning Captions...";
 
 let srt=`1
 00:00:00,000 --> 00:00:30,000
-${text}
+${captions[i]}
 `;
 
-ffmpeg.FS("writeFile","subtitles.srt", new TextEncoder().encode(srt));
+ffmpeg.FS("writeFile","sub"+i+".srt", new TextEncoder().encode(srt));
 
 await ffmpeg.run(
-"-i","reel.mp4",
-"-vf","subtitles=subtitles.srt",
+"-i","reel"+i+".mp4",
+"-vf","subtitles=sub"+i+".srt:force_style='FontSize=32,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3'",
 "-preset","ultrafast",
-"final.mp4"
+"final"+i+".mp4"
 );
 
-const finalData = ffmpeg.FS("readFile","final.mp4");
-const finalURL = URL.createObjectURL(new Blob([finalData.buffer],{type:"video/mp4"}));
+const data = ffmpeg.FS("readFile","final"+i+".mp4");
+const url = URL.createObjectURL(new Blob([data.buffer],{type:"video/mp4"}));
 
-preview.src = finalURL;
+let box = document.createElement("div");
+box.className="video-box";
 
-statusText.innerText="Reel Ready with Auto Captions ✅";
+box.innerHTML=`
+<video controls src="${url}"></video>
+<a href="${url}" download="reel_${i+1}.mp4" class="download-btn">
+Download
+</a>
+`;
+
+videoGrid.appendChild(box);
+
+}
+
+statusText.innerText="3 Reels Ready ✅";
 statusText.style.color="#22c55e";
 
 }
