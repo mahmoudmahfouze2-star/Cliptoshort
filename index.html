@@ -4,24 +4,19 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClipToShort - Upload Short Generator</title>
+<title>ClipToShort - AI Shorts Generator</title>
 
-<!-- FFmpeg -->
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+<script src="https://unpkg.com/vosk-browser/dist/vosk.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@800&display=swap" rel="stylesheet">
 
 <style>
-
-/* ===== Reset ===== */
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-}
+*{box-sizing:border-box;margin:0;padding:0;}
 
 body{
 background:#0f0f14;
 color:white;
-font-family:Arial, sans-serif;
+font-family:'Cairo', sans-serif;
 padding:20px;
 }
 
@@ -31,20 +26,7 @@ text-align:center;
 margin-bottom:20px;
 }
 
-.main-wrapper{
-display:flex;
-justify-content:center;
-align-items:flex-start;
-gap:25px;
-max-width:1400px;
-margin:0 auto;
-}
-
-.container{
-flex:1;
-max-width:850px;
-text-align:center;
-}
+.container{text-align:center;}
 
 input, select{
 padding:12px;
@@ -53,7 +35,6 @@ width:90%;
 max-width:400px;
 border-radius:8px;
 border:none;
-outline:none;
 font-size:15px;
 }
 
@@ -65,175 +46,155 @@ color:white;
 border:none;
 border-radius:10px;
 cursor:pointer;
-font-size:16px;
 transition:0.3s;
 }
 
-button:hover{
-background:#22d3ee;
-}
-
-.video-grid{
-display:flex;
-flex-wrap:wrap;
-gap:20px;
-justify-content:center;
-margin-top:25px;
-}
+button:hover{background:#22d3ee;}
 
 .video-box{
-background:#1f1f2e;
-padding:15px;
-border-radius:12px;
-width:260px;
+margin-top:25px;
+position:relative;
+max-width:400px;
+margin-inline:auto;
 }
 
 video{
 width:100%;
-border-radius:10px;
+border-radius:15px;
 }
 
-.status{
-font-weight:bold;
-margin-top:15px;
+.caption{
+position:absolute;
+bottom:15%;
+left:50%;
+transform:translateX(-50%);
+text-align:center;
+width:90%;
 }
 
-.download-btn{
+.word{
 display:inline-block;
-margin-top:12px;
-padding:10px 18px;
-background:#22c55e;
+margin:4px;
+font-size:26px;
+font-weight:800;
 color:white;
-border-radius:8px;
-text-decoration:none;
-font-weight:bold;
+-webkit-text-stroke:1px black;
+text-shadow:0 0 8px #ff0050;
+transition:all 0.2s ease;
 }
 
-@media(max-width:768px){
-.main-wrapper{
-flex-direction:column;
-align-items:center;
-}
-.video-box{
-width:100%;
-max-width:350px;
-}
+.active{
+color:#00f2ff;
+transform:scale(1.4);
+text-shadow:
+0 0 10px #00f2ff,
+0 0 20px #00f2ff,
+0 0 30px #00f2ff;
 }
 
+.status{margin-top:15px;font-weight:bold;}
 </style>
-</head>
 
+</head>
 <body>
 
-<h1>ClipToShort</h1>
+<h1>ClipToShort AI</h1>
+
+<div class="container">
 
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
-<label>Short Duration</label>
-<select id="duration">
-<option value="15">15s</option>
-<option value="30">30s</option>
-<option value="60">60s</option>
-</select>
+<button id="generateBtn">Generate Highlight + Auto Captions</button>
 
-<button id="generateBtn">Generate 3 Highlights</button>
+<div class="video-box">
+<video id="preview" controls></video>
+<div id="captionBox" class="caption"></div>
+</div>
 
-<div class="video-grid" id="videoGrid"></div>
+</div>
 
 <script>
-
-const ffmpeg = FFmpeg.createFFmpeg({ log: false });
+const ffmpeg = FFmpeg.createFFmpeg({ log:false });
 const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
 let statusText = document.getElementById("uploadStatus");
 let generateBtn = document.getElementById("generateBtn");
-let videoGrid = document.getElementById("videoGrid");
+let preview = document.getElementById("preview");
+let captionBox = document.getElementById("captionBox");
 
 let uploadedFile = null;
 
 input.addEventListener("change", function(){
 uploadedFile = input.files[0];
 if(uploadedFile){
+preview.src = URL.createObjectURL(uploadedFile);
 statusText.innerText = "Video Ready ✅";
 statusText.style.color = "#22c55e";
 }
 });
 
-generateBtn.addEventListener("click", generateHighlights);
+generateBtn.addEventListener("click", processVideo);
 
-async function generateHighlights(){
+async function processVideo(){
 
-if(!uploadedFile){
-alert("Upload video first");
-return;
-}
+if(!uploadedFile){ alert("Upload video first"); return; }
 
-statusText.innerText = "Processing video...";
+statusText.innerText = "Extracting audio...";
 statusText.style.color = "#facc15";
 
-const tempVideo = document.createElement("video");
-tempVideo.src = URL.createObjectURL(uploadedFile);
-await tempVideo.play().catch(()=>{});
-tempVideo.pause();
+if(!ffmpeg.isLoaded()) await ffmpeg.load();
 
-const totalDuration = Math.floor(tempVideo.duration);
-const shortDuration = parseInt(document.getElementById("duration").value);
-
-if(!ffmpeg.isLoaded()){
-await ffmpeg.load();
-}
-
-ffmpeg.FS("writeFile", "input.mp4", await fetchFile(uploadedFile));
-videoGrid.innerHTML = "";
-
-let startPoints = [
-Math.floor(totalDuration * 0.3),
-Math.floor(totalDuration * 0.5),
-Math.floor(totalDuration * 0.75)
-];
-
-for(let i=0;i<3;i++){
+ffmpeg.FS("writeFile","input.mp4",await fetchFile(uploadedFile));
 
 await ffmpeg.run(
-"-ss", startPoints[i].toString(),
-"-t", shortDuration.toString(),
-"-i", "input.mp4",
-"-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280",
-"-c:v", "libx264",
-"-preset", "fast",
-"-crf", "23",
-"-c:a", "aac",
-"-b:a", "128k",
-"output"+i+".mp4"
+"-i","input.mp4",
+"-vn",
+"-acodec","pcm_s16le",
+"-ar","16000",
+"-ac","1",
+"audio.wav"
 );
 
-const data = ffmpeg.FS("readFile", "output"+i+".mp4");
-const url = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
+const audioData = ffmpeg.FS("readFile","audio.wav");
 
-let box = document.createElement("div");
-box.className = "video-box";
+statusText.innerText = "Loading AI model (first time slow)...";
 
-box.innerHTML = `
-<video controls src="${url}"></video>
-<a href="${url}" download="highlight_${i+1}.mp4" class="download-btn">
-Download
-</a>
-`;
+const model = await Vosk.createModel(
+"https://alphacephei.com/vosk/models/vosk-model-small-ar-0.22.zip"
+);
 
-videoGrid.appendChild(box);
-}
+const recognizer = new model.KaldiRecognizer(16000);
+recognizer.acceptWaveform(audioData);
 
-statusText.innerText = "3 Highlights Ready ✅";
+const result = recognizer.result();
+
+if(result.text){
+displayWords(result.text);
+statusText.innerText = "Captions Ready ✅";
 statusText.style.color = "#22c55e";
-
+}
 }
 
-</script>
+function displayWords(text){
+captionBox.innerHTML="";
+const words=text.split(" ");
 
-<!-- 🔥 Adsterra Social Bar (يوضع هنا قبل إغلاق body) -->
-<script src="https://pl28740604.effectivegatecpm.com/f4/e7/76/f4e7760f6cd0efb0d0ac579adc77b1d9.js"></script>
+words.forEach((word,index)=>{
+let span=document.createElement("span");
+span.className="word";
+span.textContent=word;
+captionBox.appendChild(span);
+
+setTimeout(()=>{
+span.classList.add("active");
+setTimeout(()=>span.classList.remove("active"),300);
+},index*350);
+
+});
+}
+</script>
 
 </body>
 </html>
