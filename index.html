@@ -7,7 +7,6 @@
 <title>ClipToShort - AI Shorts Generator</title>
 
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<script src="https://unpkg.com/vosk-browser/dist/vosk.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@800&display=swap" rel="stylesheet">
 
 <style>
@@ -28,7 +27,7 @@ margin-bottom:20px;
 
 .container{text-align:center;}
 
-input, select{
+input{
 padding:12px;
 margin:10px 0;
 width:90%;
@@ -105,7 +104,7 @@ text-shadow:
 <input type="file" id="videoInput" accept="video/*">
 <p id="uploadStatus" class="status"></p>
 
-<button id="generateBtn">Generate Highlight + Auto Captions</button>
+<button id="generateBtn">Start Auto Captions</button>
 
 <div class="video-box">
 <video id="preview" controls></video>
@@ -115,8 +114,6 @@ text-shadow:
 </div>
 
 <script>
-const ffmpeg = FFmpeg.createFFmpeg({ log:false });
-const fetchFile = FFmpeg.fetchFile;
 
 let input = document.getElementById("videoInput");
 let statusText = document.getElementById("uploadStatus");
@@ -124,76 +121,76 @@ let generateBtn = document.getElementById("generateBtn");
 let preview = document.getElementById("preview");
 let captionBox = document.getElementById("captionBox");
 
-let uploadedFile = null;
+let recognition;
 
 input.addEventListener("change", function(){
-uploadedFile = input.files[0];
-if(uploadedFile){
-preview.src = URL.createObjectURL(uploadedFile);
+let file = input.files[0];
+if(file){
+preview.src = URL.createObjectURL(file);
 statusText.innerText = "Video Ready ✅";
 statusText.style.color = "#22c55e";
 }
 });
 
-generateBtn.addEventListener("click", processVideo);
+generateBtn.addEventListener("click", startCaptions);
 
-async function processVideo(){
+function startCaptions(){
 
-if(!uploadedFile){ alert("Upload video first"); return; }
+if (!('webkitSpeechRecognition' in window)) {
+alert("Use Google Chrome Browser");
+return;
+}
 
-statusText.innerText = "Extracting audio...";
+recognition = new webkitSpeechRecognition();
+recognition.lang = "ar-EG";
+recognition.continuous = true;
+recognition.interimResults = true;
+
+recognition.onresult = function(event){
+
+let transcript = "";
+
+for(let i = event.resultIndex; i < event.results.length; ++i){
+transcript += event.results[i][0].transcript;
+}
+
+displayWords(transcript);
+};
+
+recognition.onerror = function(){
+statusText.innerText = "Speech Recognition Error ❌";
+statusText.style.color = "red";
+};
+
+recognition.start();
+
+preview.play();
+
+statusText.innerText = "Listening & Generating Captions...";
 statusText.style.color = "#facc15";
 
-if(!ffmpeg.isLoaded()) await ffmpeg.load();
-
-ffmpeg.FS("writeFile","input.mp4",await fetchFile(uploadedFile));
-
-await ffmpeg.run(
-"-i","input.mp4",
-"-vn",
-"-acodec","pcm_s16le",
-"-ar","16000",
-"-ac","1",
-"audio.wav"
-);
-
-const audioData = ffmpeg.FS("readFile","audio.wav");
-
-statusText.innerText = "Loading AI model (first time slow)...";
-
-const model = await Vosk.createModel(
-"https://alphacephei.com/vosk/models/vosk-model-small-ar-0.22.zip"
-);
-
-const recognizer = new model.KaldiRecognizer(16000);
-recognizer.acceptWaveform(audioData);
-
-const result = recognizer.result();
-
-if(result.text){
-displayWords(result.text);
-statusText.innerText = "Captions Ready ✅";
-statusText.style.color = "#22c55e";
-}
 }
 
 function displayWords(text){
-captionBox.innerHTML="";
-const words=text.split(" ");
+
+captionBox.innerHTML = "";
+let words = text.split(" ");
 
 words.forEach((word,index)=>{
-let span=document.createElement("span");
-span.className="word";
-span.textContent=word;
+let span = document.createElement("span");
+span.className = "word";
+span.textContent = word;
 captionBox.appendChild(span);
 
 setTimeout(()=>{
 span.classList.add("active");
 setTimeout(()=>span.classList.remove("active"),300);
-},index*350);
+}, index * 250);
 
 });
+
 }
+
 </script>
 
 </body>
